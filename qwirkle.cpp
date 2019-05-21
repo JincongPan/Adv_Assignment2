@@ -28,6 +28,7 @@ std::unordered_map<char, std::string> colourMap = {
          {'P', "\033[35m"},                        /* Purple */
          {'O', "\033[34m"}                         /* Orange */
 };
+bool restart = true;
 
 void PrintChar() {
    std::cin.clear();
@@ -40,6 +41,72 @@ bool operator<(const Score& s1, const Score& s2) {
 }
 
 // qwirkle rules 
+bool QwirkleRulesCheck(int row, int col, Tile* tp) {
+   bool allowed = true;
+
+   if (board[row][col]->colour != ' ') return false;
+   // level check if has same attribute 
+   for (int i = col + 1; i < COLUMN; ++i) {
+      // ' ' is blank tile 
+      // std::cout << "i: " << i << std::endl;
+      if (board[row][i]->colour == ' ') {
+         continue;
+      } else {
+         if ((board[row][i]->colour == tp->colour) || (board[row][i]->shape == tp->shape)) {
+            return true;
+         } else {
+            allowed = false;
+            break;
+         }
+      }
+   }
+
+   for (int i = col - 1; i >= 0; --i) {
+      // ' ' is blank tile 
+      // std::cout << "i: " << i << std::endl;
+      if (board[row][i]->colour == ' ') {
+         continue;
+      } else {
+         if ((board[row][i]->colour == tp->colour) || (board[row][i]->shape == tp->shape)) {
+            return true;
+         } else {
+            allowed = false;
+            break;
+         }
+      }
+   }
+
+   // vertical check if has same attribute 
+   for (int i = row + 1; i < ROW; ++i) {
+      if (board[i][col]->colour == ' ') {
+         continue;
+      } else {
+         if ((board[i][col]->colour == tp->colour) || (board[i][col]->shape == tp->shape)) {
+            return true;
+         } else {
+            allowed = false;
+            break;
+         }
+      }
+   }
+
+   for (int i = row - 1; i >= 0; --i) {
+      if (board[i][col]->colour == ' ') {
+         continue;
+      } else {
+         if ((board[i][col]->colour == tp->colour) || (board[i][col]->shape == tp->shape)) {
+            return true;
+         } else {
+            allowed = false;
+            break;
+         }
+      }
+   }
+
+   return allowed;
+}
+
+// increase score, return value show if qwirkle!!!
 bool IncScore(int row, int col, Tile* tp, int& score) {
    bool qwirkle = false;
    std::unordered_map<char, int> mp = {
@@ -52,14 +119,14 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
    };
    // colour level
    int cls = 1;
-   for (size_t i = col; i < COLUMN; ++i) {
+   for (int i = col + 1; i < COLUMN; ++i) {
       if (board[row][i]->colour == tp->colour) {
          cls++;
       } else {
          break;
       }
    }
-   for (size_t i = col; i >= 0; --i) {
+   for (int i = col - 1; i >= 0; --i) {
       if (board[row][i]->colour == tp->colour) {
          cls++;
       } else {
@@ -69,14 +136,14 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
 
    // colour vertical
    int cvs = 1;
-   for (size_t i = row; i < ROW; ++i) {
+   for (int i = row + 1; i < ROW; ++i) {
       if (board[i][col]->colour == tp->colour) {
          cvs++;
       } else {
          break;
       }
    }
-   for (size_t i = row; i >= 0; --i) {
+   for (int i = row - 1; i >= 0; --i) {
       if (board[i][col]->colour == tp->colour) {
          cvs++;
       } else {
@@ -86,14 +153,14 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
 
    // shape level
    int tls = 1;
-   for (size_t i = col; i < COLUMN; ++i) {
+   for (int i = col + 1; i < COLUMN; ++i) {
       if (board[row][i]->shape == tp->shape) {
          tls++;
       } else {
          break;
       }
    }
-   for (size_t i = col; i >= 0; --i) {
+   for (int i = col - 1; i >= 0; --i) {
       if (board[row][i]->shape == tp->shape) {
          tls++;
       } else {
@@ -103,14 +170,14 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
 
    // shape vertical
    int tvs = 1;
-   for (size_t i = row; i < ROW; ++i) {
+   for (int i = row + 1; i < ROW; ++i) {
       if (board[i][col]->shape == tp->shape) {
          tvs++;
       } else {
          break;
       }
    }
-   for (size_t i = row; i >= 0; --i) {
+   for (int i = row - 1; i >= 0; --i) {
       if (board[i][col]->shape == tp->shape) {
          tvs++;
       } else {
@@ -118,8 +185,9 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
       }
    }
 
-   int maxl = std::max(cls, cvs);
-   int maxt = std::max(tvs, tls);
+   std::cout << "cls: " << cls << "cvs: " << cvs << "tvs: " << tvs << "tls: " << tls << std::endl;
+   int maxl = std::max(cls, tls);
+   int maxt = std::max(tvs, cvs);
 
    maxl = (maxl > 1) ? maxl : 0;
    maxt = (maxt > 1) ? maxt : 0;
@@ -143,7 +211,6 @@ void PlayGame(int start) {
          std::cout << "> ";
          while((!inputCorrect) && (std::cin >> action)) {
             // execute the following actions : place, replace, save,  help
-
             if (action.compare("place") == 0) {
                std::string tile, at, location;
                std::cin >> tile >> at >> location;
@@ -162,23 +229,38 @@ void PlayGame(int start) {
                   continue;
                }
                if (!CheckLocation(location, row, col)) {
-                  std::cout << "Location error. format: <row><column>" << tile << row << " " << col << std::endl;
+                  std::cout << "Location error. format: <row><column>" << tile << row + 'A' << " " << col << std::endl;
                   PrintChar();
                   continue;
                }
 
                // qwirkle rule check
-               int score;
-               if (IncScore(row, col, tp, score)) {
-                  std::cout << "QWIRKLE!!!" << std::endl;
-               }
-               playerScores[i] += score;
 
-               inputCorrect = true;
-               board[row][col] = tp;
-               Node* node = listBag->Pop();
-               playerHands[i]->InsertNodeToTail(node);
-               std::cout << "place action: " << tp->colour << tp->shape << " " << row << " " << col << std::endl;
+               if (QwirkleRulesCheck(row, col, tp)) {
+                  // increase scores 
+                  int score;
+                  if (IncScore(row, col, tp, score)) {
+                     std::cout << "QWIRKLE!!!" << std::endl;
+                  }
+                  playerScores[i] += score;
+
+                  inputCorrect = true;
+                  board[row][col] = tp;
+                  playerHands[i]->DeleteTile(tp);
+                  Node* node = listBag->Pop();
+                  if (node) {
+                     playerHands[i]->InsertNodeToTail(node);
+                  } else {
+                     std::cout << "Bag is empty" << std::endl;
+                  }
+                  
+                  // std::cout << "place action: " << tp->colour << tp->shape << " " << char(row + 'A') << col << std::endl;
+               } else {
+                  std::cout << "place " << tp->colour << tp->shape << " at " << char(row + 'A') << col << " is not allowed" << std::endl;
+                  PrintChar();
+                  continue;
+               }
+               
             
             // replace command
             } else if (action.compare("replace") == 0) {
@@ -201,7 +283,12 @@ void PlayGame(int start) {
                } else {
                   listBag->InsertNodeToTail(node);
                   node = listBag->Pop();
-                  playerHands[i]->InsertNodeToTail(node);
+                  if (node) {
+                     playerHands[i]->InsertNodeToTail(node);
+                  } else {
+                     std::cout << "Bag is empty" << std::endl;
+                  }
+                  
                   inputCorrect = true;
                }
 
@@ -217,11 +304,20 @@ void PlayGame(int start) {
                } else {
                   std::cout << "Game saved failed" << std::endl;
                }
-
+               PrintChar();
             // help command
             } else if (action.compare("help") == 0) {
                PrintHelpMessage();
                std::cout << "> ";
+            } else if (action.compare("quit") == 0) {
+               return;
+            } else if (action.compare("restart") == 0) {
+               restart = true;
+               return ; // restart
+            } else {
+               std::cout << "Action is error, place input again" << std::endl;
+               DisplayGame(i);
+               PrintChar();
             }
          }
 
@@ -232,6 +328,12 @@ void PlayGame(int start) {
             break;
             // exit(EXIT_SUCCESS);
          }
+
+         // whether end the game, just only 1. The tile bag is empty && 2. One player has no more tiles in their hand
+         if (playerHands[i] == NULL) {
+            PrintGameOverInformation();
+         }
+
       }
    }
 }
@@ -253,8 +355,16 @@ void InitGame() {
    listBag->Shuffle();
 
    // init player name and it's hand's tiles
+
    std::cout << std::endl << "Starting a New Game" << std::endl;
    Node* t = nullptr;
+   playerNames.clear();
+   playerHands.clear();
+   std::vector<std::vector<Tile*>> board_t(ROW, std::vector<Tile*>(COLUMN, new Tile(' ', -1)));
+   board.swap(board_t);
+   while (!highScores.empty()) {
+      highScores.pop();
+   }
    for (size_t i = 0; i < playerNum; ++i) {
       std::string playerName;
       
@@ -274,11 +384,7 @@ void InitGame() {
    std::cout << "Let’s Play!" << std::endl;
 }
 
-int main(void) {
-
-   std::cout << "Welcome to Qwirkle!" << std::endl;
-   std::cout << "-------------------" << std::endl;
-   
+void RunningGame() {
    PrintMenuMessage();
    std::cout << "> "; 
    
@@ -324,8 +430,18 @@ int main(void) {
          std::cout << "Invalid Input" << std::endl;
          std::cout << "> "; 
       }
-      
    }
+}
+
+int main(void) {
+
+   std::cout << "Welcome to Qwirkle!" << std::endl;
+   std::cout << "-------------------" << std::endl;
+   while (restart) {
+      restart = false;
+      RunningGame();
+   }
+   
    std::cout << "Goodbye" << std::endl; 
 
    return EXIT_SUCCESS;
