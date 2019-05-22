@@ -10,9 +10,7 @@
 #include <sstream>      // std::ostringstream
 
 bool CheckPlayName(std::string &name);
-
 Tile* CheckTile(std::string tile);
-
 bool CheckLocation(std::string loc, int &row, int &col);
 
 #endif // ASSIGN2_CHECK_FORMAT_H

@@ -10,6 +10,8 @@
 #include <sstream>      // std::ostringstream
 
 bool CheckPlayName(std::string &name) {
+   if (name.size() == 0) return false;
+   
    for (size_t i = 0; i < name.size(); ++i) {
       if ((name[i] < 'A') || (name[i] > 'Z')) {
          return false;
@@ -35,15 +37,6 @@ Tile* CheckTile(std::string tile) {
    }
    return nullptr;
 }
-
-// bool CheckTileExistHand(LinkedList* hand, Tile* tp) {
-//    if (hand->HasTile(tp)) {
-//       // std::cout << "true" << std::endl;
-//       return true;
-//    } else {
-//       return false;
-//    }
-// }
 
 bool CheckLocation(std::string loc, int &row, int &col) {
    // if (loc.size() != 2) return false;
