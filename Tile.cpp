@@ -1,4 +1,10 @@
 
 #include "Tile.h"
 
-// Empty... for now?
+// Empty... construct for Tile
+Tile::Tile(Colour col, Shape sha)
+{
+   colour = col;
+   shape = sha;
+   // TODO
+}
