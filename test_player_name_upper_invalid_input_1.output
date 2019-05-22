@@ -1,0 +1,37 @@
+Welcome to Qwirkle!
+-------------------
+Menu
+-------------------
+1. New Game
+2. Load Game
+3. Show student information
+4. Quit
+> Please input the playerNum(2, 3, 4): 
+Starting a New Game
+
+Enter a name for player1(uppercase characters only)
+> Name:UP1 is not correct(uppercase characters only). Please input again.
+
+Enter a name for player1(uppercase characters only)
+> Name:up1 is not correct(uppercase characters only). Please input again.
+
+Enter a name for player1(uppercase characters only)
+> 
+Enter a name for player2(uppercase characters only)
+> Name:23 is not correct(uppercase characters only). Please input again.
+
+Enter a name for player2(uppercase characters only)
+> Name:one is not correct(uppercase characters only). Please input again.
+
+Enter a name for player2(uppercase characters only)
+> 
+Enter a name for player3(uppercase characters only)
+> Name:3 is not correct(uppercase characters only). Please input again.
+
+Enter a name for player3(uppercase characters only)
+> Name:Three is not correct(uppercase characters only). Please input again.
+
+Enter a name for player3(uppercase characters only)
+> 
+Enter a name for player4(uppercase characters only)
+> Goodbye

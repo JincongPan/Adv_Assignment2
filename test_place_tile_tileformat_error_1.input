@@ -1,0 +1,11 @@
+2
+test_place_tile_location_error_1.load
+place R4 at O12
+place R1 at P12
+place R6 at O13
+place O1 at P11
+place Y6 at N13
+place Y3 at N14
+place O15 at Q11
+place O7 at Q11
+place o5 at Q11
