@@ -14,11 +14,9 @@ std::string DisplayBoard(bool console) {
    stream << "   0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25" << std::endl;
    stream << "------------------------------------------------------------------------------------" << std::endl;
    for (size_t i = 0; i < ROW; ++i) {
-      stream << (char)('A' + i )<< " " << "|";
+      stream << (char)('A' + i ) << " " << "|";
       for (size_t j = 0; j < COLUMN; ++j) {
-         // stream << colourMap[board[i][j]->colour] << board[i][j]->colour;
          if (board[i][j]->shape == -1) {
-            // stream << board[i][j]->colour;
             stream << "  " << "|";
          } else {
             if (console) {
@@ -36,6 +34,36 @@ std::string DisplayBoard(bool console) {
    return stream.str();
 }
 
+std::string DisplayBoardUnicode() {
+   std::ostringstream stream;
+   stream << "   0   2   4   6   8   10  12  14  16  18  20  22  24  " << std::endl;
+   stream << "     1   3   5   7   9   11  13  15  17  19  21  23  25" << std::endl;
+   stream << "---------------------------------------------------------" << std::endl;
+   for (size_t i = 0; i < ROW; ++i) {
+      stream << (char)('A' + i ) << " " << "|";
+      for (size_t j = 0; j < COLUMN; ++j) {
+         if (board[i][j]->shape == -1) {
+            stream << " " << "|";
+         } else {
+            stream << colourMap.at((board[i][j]->colour)) << unicodeMap[board[i][j]->shape] << colourMap.at('W');
+            stream  << "|";
+         }
+      }
+      stream << std::endl;
+   }
+
+   for (size_t i = 0; i < COLOUR_SIZE; ++i) {
+      stream << colour[i] << ":" << colourMap.at(colour[i]) << colour[i] << colourMap.at('W') << "  ";
+   }
+   stream << std::endl;
+   for (size_t i = 0; i < SHAPE_SIZE; ++i) {
+      stream << shape[i] << ":" << unicodeMap.at(shape[i]) << "  ";
+   }
+   stream << std::endl;
+
+   return stream.str();
+}
+
 // display player's hand and current board's tiles
 void DisplayGame(int id) {
    std::cout << playerNames[id] << ", it’s your turn" << std::endl;
@@ -43,9 +71,14 @@ void DisplayGame(int id) {
       std::cout << "Score for " << playerNames[i] << ": " << playerScores[i] << std::endl;
    }
 
-   std::cout << DisplayBoard(true);
-   std::cout << "Your hand is" << std::endl << playerHands[id]->GetTiles() << std::endl;
-   // playerHands[id]->PrintTiles();
+   if (unicode) {
+      std::cout << DisplayBoardUnicode();
+      std::cout << "Your hand is" << std::endl << playerHands[id]->GetTiles(true, unicode) << std::endl;
+   } else {
+      std::cout << DisplayBoard(true);
+      std::cout << "Your hand is" << std::endl << playerHands[id]->GetTiles(true, unicode) << std::endl;
+   }
+   
 }
 
 // print menu 
@@ -71,13 +104,54 @@ void PrintStudentInformation() {
    std::cout << "-------------------" << std::endl;
 }
 
+// winner info
+void PrintGameOverInformation() {
+   std::cout << "Game over" << std::endl;
+   size_t maxScore = 0;
+   int winner = 0;
+   for (size_t i = 0; i < playerNum; ++i) {
+      std::cout << "Score for <" << playerNames[i] << ">: " << playerScores[i] << std::endl;
+      if (playerScores[i] > maxScore) {
+         winner = i;
+         maxScore = playerScores[i];
+      }
+   }
+
+   std::cout << "Player <" << playerNames[winner] << "> won!" << std::endl;
+}
+
+// print the priority queue of the highscores
+void PrintHighScores() {
+   std::priority_queue<Score> highScoresTmp;
+   std::vector<Score> scores;
+   while (!highScores.empty()) {
+      Score s = highScores.top();
+      scores.push_back(s);
+      highScores.pop();
+      highScoresTmp.push(s);
+   }
+   highScores.swap(highScores);
+
+   int num = scores.size();
+   if (num == 0) {
+      std::cout << "No highscores." << std::endl;
+   } else {
+      std::cout << std::endl << "#  " << "Name  " << "Score " << std::endl;
+      for (int i = 0; i < num; ++i) {
+         std::cout << i + 1 << ". " << scores[i].name << "   " << scores[i].score << std::endl;
+      }
+   }
+}
+
 // for help command  see 4.1.1 Help! 
 void PrintHelpMessage() {
    std::cout << "-------  help  ------------" << std::endl;
-
    std::cout << "You can input the following actions: " << std::endl;
    std::cout << "place <tile> at <grid location>" << std::endl;
    std::cout << "replace <tile>" << std::endl;
+   std::cout << "restart(restart a new game)" << std::endl;
+   std::cout << "highscore(display the list of high scores achieved by any player who has played your game of Qwirkle)" << std::endl;
+   std::cout << "quit(quit the game)" << std::endl;
 
    std::cout << "-------------------" << std::endl;
 }
@@ -117,7 +191,7 @@ bool LoadGame(std::string path, int &start) {
             }
             for (size_t k = 0; k < tiles.size(); ++k) {
                if ((tp = CheckTile(tiles[k])) != nullptr) {
-                  list->InsertNodeToTail(tp);
+                  list->InsertTileToTail(tp);
                }
             }
             playerHands.push_back(list);
@@ -130,7 +204,7 @@ bool LoadGame(std::string path, int &start) {
          }
       }
 
-      // discard "------------------------------------------------------------------------------------"
+      // discard line "------------------------------------------------------------------------------------"
       ifs.getline(line, 256);
       
       // load board  
@@ -160,7 +234,7 @@ bool LoadGame(std::string path, int &start) {
          }
       }
       
-      // test 
+      // for debug 
       // std::cout << DisplayBoard(true);
 
       // load bag's tiles 
@@ -176,11 +250,11 @@ bool LoadGame(std::string path, int &start) {
       }
       for (size_t k = 0; k < tiles.size(); ++k) {
          if ((tp = CheckTile(tiles[k])) != nullptr) {
-            listBag->InsertNodeToTail(tp);
+            listBag->InsertTileToTail(tp);
          }
       }
 
-      // test 
+      // for debug  
       // std::cout << listBag->GetTiles() << std::endl;
 
       // load cur player, it's start-th player
@@ -191,7 +265,7 @@ bool LoadGame(std::string path, int &start) {
          }
       }
 
-      // test 
+      // for debug 
       // std::cout << player  << " " << start << std::endl;
 
       // load high scores
@@ -218,13 +292,13 @@ bool SaveGame(std::string path, int id) {
       for (size_t i = 0; i < playerNum; ++i) {
          ofs << playerNames[i] << std::endl;
          ofs << playerScores[i] << std::endl;
-         std::string handTile = playerHands[i]->GetTiles();
+         std::string handTile = playerHands[i]->GetTiles(false, unicode);
          ofs << handTile << std::endl;
       }
       // save board
       ofs << DisplayBoard(false);
       // save bagtiles
-      ofs << listBag->GetTiles() << std::endl;
+      ofs << listBag->GetTiles(false, unicode) << std::endl;
       // save current player's name 
       ofs << playerNames[id] << std::endl;
       // save the highscores 
@@ -244,10 +318,22 @@ bool SaveGame(std::string path, int id) {
    return true;
 }
 
-void InputPlayerName(std::string &playerName, int id) {
+bool InputPlayerName(std::string &playerName, int id) {
+   // bool once = false;
    do {
       std::cout << std::endl << "Enter a name for player" << id << "(uppercase characters only)" << std::endl;
       std::cout << "> ";
-      std::cin >> playerName;
+      // input name error, return false
+      if (std::cin >> playerName) {
+         if (!CheckPlayName(playerName)) {
+            std::cout << "Name:" << playerName << " is not correct(uppercase characters only). Please input again." << std::endl;
+         }
+         // once = true;
+      } else {
+         return false;
+      }
+      std::cin.get();
    } while (!CheckPlayName(playerName));
+   
+   return true;
 }
