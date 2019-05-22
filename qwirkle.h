@@ -38,7 +38,33 @@ extern std::vector<std::vector<Tile*>> board;
 extern char colour[];
 extern int shape[];
 extern std::unordered_map<char, std::string> colourMap;
+extern std::unordered_map<int, std::string> unicodeMap;
 extern std::priority_queue<Score> highScores;
+extern bool restart;
+extern bool unicode;
 
 extern bool operator<(const Score& s1, const Score& s2);	// compare function 
+
+// qwirkle rules check 
+int HasSameColourLevel(int row, int col, Tile* tp);
+int HasSameColourVertical(int row, int col, Tile* tp);
+int HasSameShapeLevel(int row, int col, Tile* tp);
+int HasSameShapeVertical(int row, int col, Tile* tp);
+bool HasSameTile(int row, int col, Tile* tp);
+// Checks whether the placed tiles conform to the rules of the game.
+// The locations where Tiles are placed must have the same properties, but they may not be adjacent.
+bool QwirkleRulesCheck(int row, int col, Tile* tp);
+// The user's score is updated after the user places the tile. When counting scores, the level 
+//  and top and bottom statistics of the adjacent tiles with the same attribute have, and 
+//  return the score that should be increased
+bool IncScore(int row, int col, Tile* tp, int& score);
+
+// game execution to parse the user's actions
+void PlayGame(int start);
+// initialize the qwirkle game, first initialize the bag, then shuffle. 
+//  The player's name, score, hand, etc. are then initialized
+bool InitGame();
+void ClearGame();
+// run the entire qwirkle program, first output menu options
+void RunningGame();
 #endif // ASSIGN2_QWIRKLE_H
