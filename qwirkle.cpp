@@ -13,22 +13,37 @@
 char colour[] = {'R', 'O', 'Y', 'G', 'B', 'P'};
 int shape[] = {1, 2, 3, 4, 5, 6};
 size_t playerNum;       // player's number 2,3,4...
-std::vector<std::string> playerNames;
-std::vector<LinkedList*> playerHands;
-std::vector<size_t> playerScores;
 LinkedList* listBag;
+// save player’s name
+std::vector<std::string> playerNames;
+// save the player hand’s tiles. The member variable of the vector is a pointer to the linkedlist.
+std::vector<LinkedList*> playerHands;
+// save player’s scores
+std::vector<size_t> playerScores;
+// a 2D array of 26X26, saves the tiles of the board
 std::vector<std::vector<Tile*>> board(ROW, std::vector<Tile*>(COLUMN, new Tile(' ', -1)));
 std::priority_queue<Score> highScores;          // record highscores
 std::unordered_map<char, std::string> colourMap = {
-         {'R', "\033[31m"},                        /* Red */
-         {'G', "\033[32m"},                        /* Green */
-         {'Y', "\033[33m"},                        /* Yellow */
-         {'B', "\033[34m"},                        /* Blue */
-         {'W', "\033[37m"},                        /* White */
-         {'P', "\033[35m"},                        /* Purple */
-         {'O', "\033[34m"}                         /* Orange */
+         {'R', "\033[0;31m"},                        /* Red */
+         {'G', "\033[0;32m"},                        /* Green */
+         {'Y', "\033[0;33m"},                        /* Yellow */
+         {'B', "\033[0;34m"},                        /* Blue */
+         {'W', "\033[0;37m"},                        /* White */
+         {'P', "\033[0;35m"},                        /* Purple */
+         {'O', "\033[1;31m"}                         /* Orange */
+};
+
+std::unordered_map<int, std::string> unicodeMap = {
+         {1, "\u25CF"},                        /* Circle */
+         {2, "\u2726"},                        /* 4-Star */
+         {3, "\u25C6"},                        /* Diamond */
+         {4, "\u25A0"},                        /* Square */
+         {5, "\u2736"},                        /* 6-Star */
+         {6, "\u2724"},                        /* Clover */
 };
 bool restart = true;
+bool unicode = false;
+bool initialization = false;
 
 void PrintChar() {
    std::cin.clear();
@@ -40,23 +55,132 @@ bool operator<(const Score& s1, const Score& s2) {
    return s1.score < s2.score;
 }
 
-// qwirkle rules 
-bool QwirkleRulesCheck(int row, int col, Tile* tp) {
-   bool allowed = true;
+int HasSameColourLevel(int row, int col, Tile* tp) {
+   int same = 1;
+   // level check if has same colour 
+   for (int i = col + 1; i < COLUMN; ++i) {
+      if (board[row][i]->colour == ' ') {
+         break;
+      } else if (board[row][i]->colour == tp->colour) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
 
-   if (board[row][col]->colour != ' ') return false;
+   for (int i = col - 1; i >= 0; --i) {
+      if (board[row][i]->colour == ' ') {
+         break;
+      } else if (board[row][i]->colour == tp->colour) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
+
+   return same;
+}
+
+int HasSameColourVertical(int row, int col, Tile* tp) {
+   int same = 1;
+   // vertical check if has same attribute 
+   for (int i = row + 1; i < ROW; ++i) {
+      if (board[i][col]->colour == ' ') {
+         break;
+      } else if (board[i][col]->colour == tp->colour) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
+
+   for (int i = row - 1; i >= 0; --i) {
+      if (board[i][col]->colour == ' ') {
+         break;
+      } else if (board[i][col]->colour == tp->colour) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
+
+   return same;
+}
+
+// 0:different  1:null  2:same
+int HasSameShapeLevel(int row, int col, Tile* tp) {
+   int same = 1;
+
+   // level check if has same colour 
+   for (int i = col + 1; i < COLUMN; ++i) {
+      if (board[row][i]->colour == ' ') {
+         break;
+      } else if (board[row][i]->shape == tp->shape) {
+         same = 2;
+         continue;
+      } else {
+         // same = 0;
+         return 0;
+      }
+   }
+
+   for (int i = col - 1; i >= 0; --i) {
+      if (board[row][i]->colour == ' ') {
+         break;
+      } else if (board[row][i]->shape == tp->shape) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
+
+   return same;
+}
+
+int HasSameShapeVertical(int row, int col, Tile* tp) {
+   int same = 1;
+
+   // vertical check if has same attribute 
+   for (int i = row + 1; i < ROW; ++i) {
+      if (board[i][col]->colour == ' ') {
+         break;
+      } else if (board[i][col]->shape == tp->shape) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
+
+   for (int i = row - 1; i >= 0; --i) {
+      if (board[i][col]->colour == ' ') {
+         break;
+      } else if (board[i][col]->shape == tp->shape) {
+         same = 2;
+         continue;
+      } else {
+         return 0;
+      }
+   }
+
+   return same;
+}
+
+bool HasSameTile(int row, int col, Tile* tp) {
    // level check if has same attribute 
    for (int i = col + 1; i < COLUMN; ++i) {
       // ' ' is blank tile 
       // std::cout << "i: " << i << std::endl;
       if (board[row][i]->colour == ' ') {
-         continue;
+         break;
       } else {
-         if ((board[row][i]->colour == tp->colour) || (board[row][i]->shape == tp->shape)) {
+         if ((board[row][i]->colour == tp->colour) && (board[row][i]->shape == tp->shape)) {
             return true;
-         } else {
-            allowed = false;
-            break;
          }
       }
    }
@@ -65,13 +189,10 @@ bool QwirkleRulesCheck(int row, int col, Tile* tp) {
       // ' ' is blank tile 
       // std::cout << "i: " << i << std::endl;
       if (board[row][i]->colour == ' ') {
-         continue;
+         break;
       } else {
-         if ((board[row][i]->colour == tp->colour) || (board[row][i]->shape == tp->shape)) {
+         if ((board[row][i]->colour == tp->colour) && (board[row][i]->shape == tp->shape)) {
             return true;
-         } else {
-            allowed = false;
-            break;
          }
       }
    }
@@ -79,30 +200,95 @@ bool QwirkleRulesCheck(int row, int col, Tile* tp) {
    // vertical check if has same attribute 
    for (int i = row + 1; i < ROW; ++i) {
       if (board[i][col]->colour == ' ') {
-         continue;
+         break;
       } else {
-         if ((board[i][col]->colour == tp->colour) || (board[i][col]->shape == tp->shape)) {
+         if ((board[i][col]->colour == tp->colour) && (board[i][col]->shape == tp->shape)) {
             return true;
-         } else {
-            allowed = false;
-            break;
          }
       }
    }
 
    for (int i = row - 1; i >= 0; --i) {
       if (board[i][col]->colour == ' ') {
-         continue;
+         break;
       } else {
-         if ((board[i][col]->colour == tp->colour) || (board[i][col]->shape == tp->shape)) {
+         if ((board[i][col]->colour == tp->colour) && (board[i][col]->shape == tp->shape)) {
             return true;
-         } else {
-            allowed = false;
-            break;
          }
       }
    }
 
+   return false;
+}
+
+// qwirkle rules 
+bool QwirkleRulesCheck(int row, int col, Tile* tp) {
+   bool allowed = true;
+
+   if (board[row][col]->colour != ' ') return false;
+   
+   // not allowed the line has the same tile 
+   if (HasSameTile(row, col, tp)) {
+      allowed = false;
+   } else {
+      // level line has no tiles
+      if (!initialization) {
+         allowed = true;
+      } else {
+         if (HasSameColourLevel(row, col, tp) == 1) {
+            if ((HasSameColourVertical(row, col, tp) == 2) || (HasSameShapeVertical(row, col, tp) == 2)) {
+               allowed = true;
+            } else {
+               allowed = false;
+            }
+         // vertical line has no tiles
+         } else if (HasSameColourVertical(row, col, tp) == 1) {
+            if ((HasSameColourLevel(row, col, tp) == 2) || (HasSameShapeLevel(row, col, tp) == 2)) {
+               allowed = true;
+            } else {
+               allowed = false;
+            }
+         } else {
+            if ((HasSameColourLevel(row, col, tp) == 0) && (HasSameShapeLevel(row, col, tp) == 0)) {
+               allowed = false;
+            } else if ((HasSameColourVertical(row, col, tp) == 0) && (HasSameShapeVertical(row, col, tp) == 0)) {
+               allowed = false;
+            } else {
+               allowed = true;
+            }
+         }
+      }
+
+      // if (HasSameColourLevel(row, col, tp) == 1) {
+      //    if ((HasSameColourVertical(row, col, tp) == 0) && (HasSameShapeVertical(row, col, tp) == 0)) {
+      //       allowed = false;
+      //    } else {
+      //       allowed = true;
+      //    }
+      // // vertical line has no tiles
+      // } else if (HasSameColourVertical(row, col, tp) == 1) {
+      //    if ((HasSameColourLevel(row, col, tp) == 0) && (HasSameShapeLevel(row, col, tp) == 0)) {
+      //       allowed = false;
+      //    } else {
+      //       allowed = true;
+      //    }
+      // } else {
+      //   // level line or vertical line has the same attribute
+      //   if (HasSameColourLevel(row, col, tp) == 2) {
+      //      allowed = true;
+      //   } else if (HasSameShapeLevel(row, col, tp) == 2) {
+      //      allowed = true;
+      //   } else if (HasSameColourVertical(row, col, tp) == 2) {
+      //      allowed = true;
+      //   } else if (HasSameShapeVertical(row, col, tp) == 2) {
+      //      allowed = true;
+      //   } else {
+      //      allowed = false;
+      //   }
+      // }
+   }
+   
+   initialization = true;
    return allowed;
 }
 
@@ -117,6 +303,7 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
       {'B', 0},
       {'P', 0},
    };
+
    // colour level
    int cls = 1;
    for (int i = col + 1; i < COLUMN; ++i) {
@@ -185,21 +372,28 @@ bool IncScore(int row, int col, Tile* tp, int& score) {
       }
    }
 
-   std::cout << "cls: " << cls << "cvs: " << cvs << "tvs: " << tvs << "tls: " << tls << std::endl;
+   // std::cout << "cls: " << cls << "cvs: " << cvs << "tvs: " << tvs << "tls: " << tls << std::endl;
    int maxl = std::max(cls, tls);
    int maxt = std::max(tvs, cvs);
 
    maxl = (maxl > 1) ? maxl : 0;
    maxt = (maxt > 1) ? maxt : 0;
 
-   if ((maxl == 6) || (maxt == 6)) {
-      qwirkle = true;
+   // if qwirkle, the score becomes double 
+   if (maxl == 6) {
+      qwirkle = true; 
+      maxl = maxl * 2;
    }
+
+   if (maxt == 6) {
+      qwirkle = true; 
+      maxt = maxt * 2;
+   }
+   // std::cout << "maxl: " << maxl << "maxt: " << maxt << std::endl;
    score = maxl + maxt;
    return qwirkle;
 }
 
-// 
 // start is the current player 
 void PlayGame(int start) {
    std::string action;
@@ -219,23 +413,23 @@ void PlayGame(int start) {
                int col, row;
 
                if (!(tp = CheckTile(tile))) {
-                  std::cout << "Tile Format error." << tile << std::endl;
+                  std::cout << "Tile:" << tile << " is error. Please input action command again." << std::endl;
                   PrintChar();
                   continue;
                }
                if (!playerHands[i]->HasTile(tp) || (at.compare("at") != 0)) {
-                  std::cout << "Player's hand doesn't have" << tile << std::endl;
+                  std::cout << "Player's hand doesn't have " << tile << ". Please input action command again."<< std::endl;
                   PrintChar();
                   continue;
                }
                if (!CheckLocation(location, row, col)) {
-                  std::cout << "Location error. format: <row><column>" << tile << row + 'A' << " " << col << std::endl;
+                  // std::cout << "Location error. format: <row><column>" << tile << row + 'A' << " " << col << std::endl;
+                  std::cout << "Location:" << char(row + 'A') << col << " is error. Please input action command again." << std::endl;
                   PrintChar();
                   continue;
                }
 
                // qwirkle rule check
-
                if (QwirkleRulesCheck(row, col, tp)) {
                   // increase scores 
                   int score;
@@ -256,31 +450,29 @@ void PlayGame(int start) {
                   
                   // std::cout << "place action: " << tp->colour << tp->shape << " " << char(row + 'A') << col << std::endl;
                } else {
-                  std::cout << "place " << tp->colour << tp->shape << " at " << char(row + 'A') << col << " is not allowed" << std::endl;
+                  std::cout << "place " << tp->colour << tp->shape << " at " << char(row + 'A') << col << " is not allowed in qwirkle rules. Please input action command again." << std::endl;
                   PrintChar();
                   continue;
                }
-               
-            
             // replace command
             } else if (action.compare("replace") == 0) {
                std::string tile;
                std::cin >> tile;
-               std::cout << "player " << playerNames[i] << " replace " << tile << " hand's: " << playerHands[i]->GetTiles() << std::endl;
-               std::cout << "bags: " << listBag->GetTiles() << std::endl;
+               std::cout << "player " << playerNames[i] << " replace " << tile << ", it's hand tiles: " << playerHands[i]->GetTiles(true, unicode) << std::endl;
                
                Tile* tp = nullptr; 
                if (!(tp = CheckTile(tile))) {
-                  std::cout << "Tile Format error. Tile contains: <colour><shape>" << tile << std::endl;
+                  std::cout << "Tile:" << tile << " is error. Please input action command again." << std::endl;
                   PrintChar();
                   continue;
                }
 
                Node* node = playerHands[i]->DeleteTile(tp);
                if (node == nullptr) {
-                  std::cout << "player hand doesn't have " << tile << std::endl;
+                  std::cout << "Player's hand doesn't have " << tile << ". Please input action command again."<< std::endl;
                   inputCorrect = false;
                } else {
+                  std::cout << "bags: " << listBag->GetTiles(true, unicode) << std::endl;
                   listBag->InsertNodeToTail(node);
                   node = listBag->Pop();
                   if (node) {
@@ -290,11 +482,10 @@ void PlayGame(int start) {
                   }
                   
                   inputCorrect = true;
+                  std::cout << "player " << playerNames[i] << " after replace " << tile << " hand's: " << playerHands[i]->GetTiles(true, unicode) << std::endl;
+                  std::cout << "bags: " << listBag->GetTiles(true, unicode) << std::endl;
                }
 
-               std::cout << "player " << playerNames[i] << " after replace " << tile << " hand's: " << playerHands[i]->GetTiles() << std::endl;
-               std::cout << "bags: " << listBag->GetTiles() << std::endl;
-            
             // save command
             } else if (action.compare("save") == 0) {
                std::string filename;
@@ -314,6 +505,8 @@ void PlayGame(int start) {
             } else if (action.compare("restart") == 0) {
                restart = true;
                return ; // restart
+            } else if (action.compare("highscore") == 0) {
+               PrintHighScores();
             } else {
                std::cout << "Action is error, place input again" << std::endl;
                DisplayGame(i);
@@ -338,37 +531,65 @@ void PlayGame(int start) {
    }
 }
 
-void InitGame() {
+bool InitGame() {
    // init bag    
    // there are only 2 tiles of each type
+   std::string playerNumString;
+   do {
+      std::cout << "Please input the playerNum(2, 3, 4): ";
+      if (std::cin >> playerNumString) {
+         try {
+            playerNum = std::stoi(playerNumString);
+         } catch (const std::invalid_argument& iat) {
+            playerNum = 0;
+         }
+         std::cin.get();
+      } else {
+         return false;
+      }
+      
+      // std::cout << "Player: " << playerNum << std::endl;
+      if ((playerNum > 4) || (playerNum < 2)) {
+         std::cout << "playerNum:" << playerNumString << " error, only support 2, 3 or 4" << std::endl;
+      }
+   } while ((playerNum > 4) || (playerNum < 2));
+
    listBag = new LinkedList();
    for (size_t i = 0; i < COLOUR_SIZE; ++i) {
       for (size_t j = 0; j < SHAPE_SIZE; ++j) {
          // 
          Tile* t1 = new Tile(colour[i], shape[j]);
          Tile* t2 = new Tile(colour[i], shape[j]);
-         listBag->InsertNodeToTail(t1);
-         listBag->InsertNodeToTail(t2);
+         listBag->InsertTileToTail(t1);
+         listBag->InsertTileToTail(t2);
+         if (playerNum > 2) {
+            Tile* t3 = new Tile(colour[i], shape[j]);
+            listBag->InsertTileToTail(t3);
+         }
       }
    }
    // shuffle the bag's tiles
    listBag->Shuffle();
 
    // init player name and it's hand's tiles
-
    std::cout << std::endl << "Starting a New Game" << std::endl;
    Node* t = nullptr;
    playerNames.clear();
    playerHands.clear();
+   playerScores.clear();
+   initialization = false;
    std::vector<std::vector<Tile*>> board_t(ROW, std::vector<Tile*>(COLUMN, new Tile(' ', -1)));
    board.swap(board_t);
    while (!highScores.empty()) {
       highScores.pop();
    }
+
    for (size_t i = 0; i < playerNum; ++i) {
       std::string playerName;
       
-      InputPlayerName(playerName, i+1);
+      if (!InputPlayerName(playerName, i+1)) {
+         return false;
+      }
       playerNames.push_back(playerName);
 
       LinkedList* list = new LinkedList();
@@ -382,6 +603,21 @@ void InitGame() {
    // init scores
    playerScores.resize(playerNum, 0);
    std::cout << "Let’s Play!" << std::endl;
+
+   return true;
+}
+
+void ClearGame() {
+   listBag = new LinkedList();
+   playerNames.clear();
+   playerHands.clear();
+   playerScores.clear();
+   initialization = false;
+   std::vector<std::vector<Tile*>> board_t(ROW, std::vector<Tile*>(COLUMN, new Tile(' ', -1)));
+   board.swap(board_t);
+   while (!highScores.empty()) {
+      highScores.pop();
+   }
 }
 
 void RunningGame() {
@@ -397,16 +633,21 @@ void RunningGame() {
          int opt = std::stoi(line);
          int start = 0;
          // std::cout << opt << std::endl;
+         
          switch(opt) {
             case 1: 
-               InitGame();
-               PlayGame(0);
+               if (InitGame()) {
+                  PlayGame(0);
+               }
+               
                invalidInput = false;
                break;
             case 2:
+               ClearGame();
                InputGamePath(path);
                if (LoadGame(path, start)) {
                   std::cout << "Qwirkle game successfully loaded" << std::endl;
+                  // std::cout << "Start: " << start << std::endl;
                   PlayGame(start);
                   invalidInput = false;
                } else {
@@ -416,18 +657,19 @@ void RunningGame() {
                break;
             case 3:
                PrintStudentInformation();
+               PrintMenuMessage();
                std::cout << "> ";
                break;
             case 4:
                invalidInput = false;
                break;
             default:
-               std::cout << "Invalid Input" << std::endl;
+               std::cout << "Invalid Input, please input the correct num(1, 2, 3, 4)." << std::endl;
                std::cout << "> ";
          }
          
       } catch (const std::invalid_argument& iat) {
-         std::cout << "Invalid Input" << std::endl;
+         std::cout << "Invalid Input, please input the correct num(1, 2, 3, 4)." << std::endl;
          std::cout << "> "; 
       }
    }
