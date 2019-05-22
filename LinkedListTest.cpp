@@ -2,6 +2,7 @@
 #include "LinkedList.h"
 
 #include <iostream>
+// <<<<<<< Dekang-Zeng
 #include <assert.h>
 
 char colour[] = {'R', 'O', 'Y', 'G', 'B', 'P'};
@@ -50,17 +51,36 @@ void InsertDeleteTest() {
 
 void BagTest() {
    LinkedList* list = new LinkedList();
+=======
+char colour[] = {'R', 'O', 'Y', 'G', 'B', 'P'};
+int shape[] = {1, 2, 3, 4, 5, 6};
+
+int main(void) {
+   LinkedList* list = new LinkedList();
+
+// >>>>>>> master
    for (int i = 0; i < 6; ++i) {
       for (int j = 0; j < 6; ++j) {
          // std::cout << i << " " << j << std::endl;
          Tile* t1 = new Tile(colour[i], shape[j]);
+// <<<<<<< Dekang-Zeng
          list->InsertTileToTail(t1);
+=======
+         list->InsertNodeToTail(t1);
+// >>>>>>> master
       }
    }
 
    std::cout << list->GetTiles() << std::endl;
+// <<<<<<< Dekang-Zeng
    list->Shuffle();
    std::cout << list->GetTiles() << std::endl;
+=======
+   // list->PrintTiles();
+   list->Shuffle();
+   std::cout << list->GetTiles() << std::endl;
+   // list->PrintTiles();
+// >>>>>>> master
    Node* tn = nullptr;
    
    LinkedList* hand = new LinkedList();
@@ -79,6 +99,7 @@ void BagTest() {
    hand->InsertNodeToTail(tn);
    std::cout << "After Delete B5, hand's" << hand->GetTiles() << std::endl;
    std::cout << "After Delete B5, bag's" << list->GetTiles() << std::endl;
+// <<<<<<< Dekang-Zeng
 }
 
 int main(void) {
@@ -88,5 +109,9 @@ int main(void) {
    InsertDeleteTest();
    BagTest();
 
+=======
+
+   // hand->PrintTiles();
+// >>>>>>> master
    return 0;
 }
